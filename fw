@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import subprocess
+import tempfile
+import argparse
+from shutil import which
+
+# Default preview command
+DEFAULT_PREVIEW_CMD = "bat --color=always --style=numbers --line-range=:500 {}"
+
+
+def check_tool(tool_name):
+    """Check if a tool is installed."""
+    if which(tool_name) is None:
+        print(f"Error: {tool_name} is not installed.")
+        exit(1)
+
+
+def run_fzf(file_list, preview_cmd):
+    """Run fzf with a preview command."""
+    try:
+        result = subprocess.run(
+            ["fzf", "--multi", "--preview", preview_cmd],
+            input="\n".join(file_list),
+            text=True,
+            capture_output=True,
+        )
+        return result.stdout.strip().split("\n") if result.returncode == 0 else []
+    except Exception as e:
+        print(f"Error: {e}")
+        exit(1)
+
+
+def combine_files(selected_files, output_file):
+    """Combine selected files into the output file."""
+    with open(output_file, "w") as f:
+        for file in selected_files:
+            f.write(f"===== File: {file} =====\n")
+            with open(file, "r") as infile:
+                f.write(infile.read())
+            f.write(f"\n===== End of {file} =====\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Interactive file selector and combiner."
+    )
+    parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to search for files (default: current directory).",
+    )
+    parser.add_argument("--hidden", action="store_true", help="Include hidden files.")
+    parser.add_argument(
+        "--no-ignore", action="store_true", help="Do not follow .gitignore rules."
+    )
+    parser.add_argument("--output", type=str, help="Specify a custom output file path.")
+    args = parser.parse_args()
+
+    # Always check for fzf (mandatory tool)
+    check_tool("fzf")
+
+    # Resolve the directory to an absolute path
+    directory = os.path.abspath(args.directory)
+
+    if not os.path.isdir(directory):
+        print(f"Error: {directory} is not a valid directory.")
+        exit(1)
+
+    if sys.stdin.isatty():  # If no piped input, `fd` is required
+        check_tool("fd")  # Check for fd
+
+        fd_cmd = ["fd", "--type", "f", "--exclude", ".git", ".", directory]
+        if args.hidden:
+            fd_cmd.append("--hidden")
+        if args.no_ignore:
+            fd_cmd.append("--no-ignore")
+        try:
+            file_list = subprocess.check_output(fd_cmd, text=True).splitlines()
+        except Exception as e:
+            print(f"Error: {e}")
+            exit(1)
+    else:
+        # Read file list from piped input
+        file_list = [line.strip() for line in sys.stdin]
+
+    # Check if $FW_PREVIEW_CMD is set
+    preview_cmd = os.getenv("FW_PREVIEW_CMD")
+    if preview_cmd:
+        print(f"Using custom preview command: {preview_cmd}")
+    else:
+        print(f"Using default preview command: {DEFAULT_PREVIEW_CMD}")
+        preview_cmd = DEFAULT_PREVIEW_CMD
+
+    # Run fzf to select files
+    selected_files = run_fzf(file_list, preview_cmd)
+    if not selected_files:
+        print("No files selected. Exiting.")
+        return
+
+    # Combine files into the output file
+    output_file = args.output or tempfile.mktemp(
+        prefix="combined_files_", suffix=".txt"
+    )
+    combine_files(selected_files, output_file)
+
+    # Open the output file in the editor
+    # Check for $EDITOR and $VISUAL with fallback to `vi`
+    editor = os.getenv("EDITOR") or os.getenv("VISUAL") or "vi"
+    subprocess.run([editor, output_file])
+
+    print(f"The combined content was saved in: {output_file}")
+
+    # Clean up if using a temporary file
+    if not args.output:
+        os.remove(output_file)
+        print("Temporary file deleted.")
+
+
+if __name__ == "__main__":
+    main()
+
