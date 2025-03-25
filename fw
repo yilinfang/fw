@@ -93,6 +93,7 @@ def main():
         print(f"Using custom preview command: {preview_cmd}")
     else:
         print(f"Using default preview command: {DEFAULT_PREVIEW_CMD}")
+        check_tool("bat")  # Check for bat
         preview_cmd = DEFAULT_PREVIEW_CMD
 
     # Run fzf to select files
@@ -122,4 +123,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
