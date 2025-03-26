@@ -37,10 +37,10 @@ def combine_files(selected_files, output_file):
     """Combine selected files into the output file."""
     with open(output_file, "w") as f:
         for file in selected_files:
-            f.write(f"===== File: {file} =====\n")
+            f.write(f"<<< START OF FILE: {file} >>>\n")
             with open(file, "r") as infile:
                 f.write(infile.read())
-            f.write(f"\n===== End of {file} =====\n")
+            f.write(f"\n<<< END OF FILE: {file} >>>\n\n")
 
 
 def main():

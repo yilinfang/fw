@@ -118,13 +118,13 @@ Set your preferred text editor to open the combined output file. If not set, the
 The combined output file contains clear separators between files for easy navigation:
 
 ```
-===== File: /path/to/file1 =====
-<file1 contents>
-===== End of /path/to/file1 =====
+<<< START OF FILE: file1.txt >>>
+<contents of file1.txt>
+<<< END OF FILE: file1.txt >>>
 
-===== File: /path/to/file2 =====
-<file2 contents>
-===== End of /path/to/file2 =====
+<<< START OF FILE: file2.txt >>>
+<contents of file2.txt>
+<<< END OF FILE: file2.txt >>>
 ```
 
 ## Acknowledgements
