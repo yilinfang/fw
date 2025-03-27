@@ -20,7 +20,6 @@
 git clone https://github.com/yilinfang/fw.git
 cd fw
 chmod +x fw
-sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
 ```
 
 ### Using `curl`
@@ -37,10 +36,12 @@ wget https://raw.githubusercontent.com/yilinfang/fw/main/fw
 chmod +x fw
 ```
 
-Then, move the `fw` file to a directory in your `$PATH` (e.g., `/usr/local/bin`):
+Then, move the `fw` file or create a symbol link to a directory in your `$PATH` (e.g., `/usr/local/bin`):
 
 ```bash
 sudo mv fw /usr/local/bin/fw
+# or
+sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
 ```
 
 You can now run `fw` directly from anywhere!
