@@ -14,6 +14,15 @@
 
 ## Installation
 
+### Using `git`
+
+```bash
+git clone https://github.com/yilinfang/fw.git
+cd fw
+chmod +x fw
+sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
+```
+
 ### Using `curl`
 
 ```bash
