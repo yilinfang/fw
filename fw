@@ -120,6 +120,8 @@ def main():
         os.remove(output_file)
         print("Temporary file deleted.")
 
+    print("Bye from fw!")
+
 
 if __name__ == "__main__":
     main()
