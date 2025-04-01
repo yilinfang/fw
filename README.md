@@ -127,7 +127,7 @@ Set your preferred text editor to open the combined output file. If not set, the
 
 The combined output file contains clear separators between files for easy navigation:
 
-```
+```txt
 <<< START OF FILE: file1.txt >>>
 <contents of file1.txt>
 <<< END OF FILE: file1.txt >>>
