@@ -107,7 +107,7 @@ find ~/Workspace -type f | fw
 
 ### `$FW_PREVIEW_CMD`
 
-Set a custom preview command for `fzf`. By default, the script uses:
+Set a custom preview command for `fzf`. By default, `fw` uses:
 
 ```bash
 bat --color=always --style=numbers --line-range=:500 {}
@@ -121,7 +121,7 @@ export FW_PREVIEW_CMD="cat {}"
 
 ### `$EDITOR` or `$VISUAL`
 
-Set your preferred text editor to open the combined output file. If not set, the script falls back to `vi`.
+Set your preferred text editor to open the combined output file. If not set, `fw` falls back to `vi`.
 
 ## Output Format
 
