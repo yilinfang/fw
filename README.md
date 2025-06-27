@@ -25,14 +25,14 @@ chmod +x fw
 ### Using `curl`
 
 ```bash
-curl -o fw https://raw.githubusercontent.com/yilinfang/fw/main/fw
+curl -o fw https://raw.githubusercontent.com/yilinfang/fw/refs/heads/main/fw
 chmod +x fw
 ```
 
 ### Using `wget`
 
 ```bash
-wget https://raw.githubusercontent.com/yilinfang/fw/main/fw
+wget https://raw.githubusercontent.com/yilinfang/fw/refs/heads/main/fw
 chmod +x fw
 ```
 
