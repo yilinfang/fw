@@ -7,12 +7,21 @@
 - **Interactive File Selection**: Use `fzf` to interactively select multiple files.
 - **Customizable Preview**: Preview file contents with `bat` or a custom preview command.
 - **File Combination**: Combine selected files into a single output file with clear separators.
-- **Directory Scanning**: Search for files using `fd` with options to include hidden files or ignore `.gitignore` rules.
+- **Directory Scanning**: Search for files using `fd` or `ripgrep` with options to include hidden files or ignore `.gitignore` rules.
 - **Piped Input Support**: Accept file lists from piped input for maximum flexibility.
 - **Temporary or Custom Output**: Save the combined output to a temporary file or a user-specified file path.
 - **Editor Integration**: Automatically open the combined file in your preferred editor (`$EDITOR`, `$VISUAL`, or `vi`).
 
 ## Installation
+
+### Prerequisites
+
+Make sure the following tools are installed on your system:
+
+- [`python3`](https://www.python.org/)
+- [`fzf`](https://github.com/junegunn/fzf)
+- [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional)
+- [`bat`](https://github.com/sharkdp/bat) (optional)
 
 ### Using `git`
 
@@ -45,15 +54,6 @@ sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
 ```
 
 You can now run `fw` directly from anywhere!
-
-## Prerequisites
-
-Make sure the following tools are installed on your system:
-
-- [python3](https://www.python.org/)
-- [fzf](https://github.com/junegunn/fzf)
-- [fd](https://github.com/sharkdp/fd) (optional)
-- [bat](https://github.com/sharkdp/bat) (optional)
 
 ## Usage
 
@@ -140,5 +140,5 @@ The combined output file contains clear separators between files for easy naviga
 ## Acknowledgements
 
 - [`fzf`](https://github.com/junegunn/fzf) for its amazing fuzzy finding capabilities.
-- [`fd`](https://github.com/sharkdp/fd) for its fast and user-friendly file searching.
+- [`fd`](https://github.com/sharkdp/fd) and [`ripgrep`](https://github.com/BurntSushi/ripgrep) for their fast and user-friendly file searching.
 - [`bat`](https://github.com/sharkdp/bat) for making file previews beautiful.
