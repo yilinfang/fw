@@ -17,7 +17,7 @@ def get_file_lister():
     """Determine the best available file listing tool."""
     if check_tool("fd"):
         return "fd"
-    if check_tool("fdfind"):  # Added check for fdfind
+    if check_tool("fdfind"):
         return "fdfind"
     if check_tool("rg"):
         return "rg"
@@ -37,7 +37,7 @@ def get_previewer():
 
 def build_file_list_command(lister, directory, hidden, no_ignore):
     """Build the command to list files based on the available tool."""
-    if lister in ["fd", "fdfind"]:  # Now handles both fd and fdfind
+    if lister in ["fd", "fdfind"]:
         cmd = [lister, "--type", "f", "--exclude", ".git", ".", directory]
         if hidden:
             cmd.append("--hidden")
@@ -158,13 +158,18 @@ def main():
         default=".",
         help="Directory to search for files (default: current directory).",
     )
-    parser.add_argument("--hidden", action="store_true", help="Include hidden files.")
     parser.add_argument(
+        "-H", "--hidden", action="store_true", help="Include hidden files."
+    )
+    parser.add_argument(
+        "-I",
         "--no-ignore",
         action="store_true",
         help="Do not follow VCS ignore rules (fd/rg only).",
     )
-    parser.add_argument("--output", type=str, help="Specify a custom output file path.")
+    parser.add_argument(
+        "-O", "--output", type=str, help="Specify a custom output file path."
+    )
     args = parser.parse_args()
 
     if not check_tool("fzf"):
@@ -193,6 +198,8 @@ def main():
         lister_cmd = build_file_list_command(
             lister, directory, args.hidden, args.no_ignore
         )
+
+        assert lister_cmd is not None, "Lister command should not be None"
 
         try:
             result = subprocess.run(
