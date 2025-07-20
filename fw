@@ -129,20 +129,25 @@ def run_fzf(file_list, preview_cmd):
         sys.exit(1)
 
 
-def combine_files(selected_files, output_file):
+def combine_files(selected_files, output_file, base_directory):
     """Combine selected files into the output file."""
     try:
         with open(output_file, "w") as f:
             for file in selected_files:
                 if not file:  # Skip empty lines that might result from fzf output
                     continue
-                f.write(f"<<< START OF FILE: {file} >>>\n")
+                # Get relative path
+                try:
+                    relative_path = os.path.relpath(file, base_directory)
+                except Exception:  # Fallback to absolute path if relative fails
+                    relative_path = file
+                f.write(f"<<< START OF FILE: {relative_path} >>>\n")
                 try:
                     with open(file, "r", errors="ignore") as infile:
                         f.write(infile.read())
                 except Exception as e:
-                    f.write(f"Error reading file {file}: {e}\n")
-                f.write(f"\n<<< END OF FILE: {file} >>>\n\n")
+                    f.write(f"Error reading file {relative_path}: {e}\n")
+                f.write(f"\n<<< END OF FILE: {relative_path} >>>\n\n")
     except Exception as e:
         print(f"Error combining files into {output_file}: {e}", file=sys.stderr)
         sys.exit(1)
@@ -255,7 +260,7 @@ def main():
             sys.exit(1)
 
     print(f"Combining {len(selected_files)} file(s)...")
-    combine_files(selected_files, output_file_path)
+    combine_files(selected_files, output_file_path, directory)
     print(f"Combined content is in: {output_file_path}")
 
     editor = os.getenv("EDITOR") or os.getenv("VISUAL") or "vi"
