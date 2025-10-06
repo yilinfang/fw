@@ -92,7 +92,7 @@ def build_file_list_command(lister, directory, hidden, no_ignore):
 def get_preview_command(previewer):
     """Get the appropriate preview command."""
     if previewer == "bat":
-        return "bat --color=always --style=numbers --line-range=:500 {}"
+        return "bat --color=always --paging=never --style=plain --line-range=:150 {}"
     if previewer == "cat":
         # Using head to prevent previewing very large files.
         return "cat {} | head -n 500"
