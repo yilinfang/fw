@@ -31,35 +31,13 @@ mise use github:yilinfang/fw
 mise use -g github:yilinfang/fw
 ```
 
-### Using `git`
+### Manual Installation
 
-```bash
-git clone https://github.com/yilinfang/fw.git
-cd fw
-chmod +x fw
-```
+1. Download the latest `fw` from [Releases](https://github.com/yilinfang/fw/releases).
 
-### Using `curl`
+2. Unarchive the downloaded file and make `fw` executable.
 
-```bash
-curl -o fw https://raw.githubusercontent.com/yilinfang/fw/refs/heads/main/fw
-chmod +x fw
-```
-
-### Using `wget`
-
-```bash
-wget https://raw.githubusercontent.com/yilinfang/fw/refs/heads/main/fw
-chmod +x fw
-```
-
-Remember to move `fw` file to a directory in your `$PATH` (e.g., `/usr/local/bin`) for easy access (no needed if using `mise`):
-
-```bash
-sudo mv fw /usr/local/bin/fw
-# or
-sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
-```
+3. Move `fw` file to a directory in your `$PATH` (e.g., `/usr/local/bin`).
 
 ## Usage
 
