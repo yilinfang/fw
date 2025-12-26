@@ -23,6 +23,14 @@ Make sure the following tools are installed on your system:
 - [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional)
 - [`bat`](https://github.com/sharkdp/bat) (optional)
 
+### Using `mise` (recommended)
+
+```bash
+mise use github:yilinfang/fw
+# Or if you want to install it globally
+mise use -g github:yilinfang/fw
+```
+
 ### Using `git`
 
 ```bash
@@ -45,15 +53,13 @@ wget https://raw.githubusercontent.com/yilinfang/fw/refs/heads/main/fw
 chmod +x fw
 ```
 
-Then, move the `fw` file or create a symbol link to a directory in your `$PATH` (e.g., `/usr/local/bin`):
+Remember to move `fw` file to a directory in your `$PATH` (e.g., `/usr/local/bin`) for easy access (no needed if using `mise`):
 
 ```bash
 sudo mv fw /usr/local/bin/fw
 # or
 sudo ln -s "$(pwd)/fw" /usr/local/bin/fw
 ```
-
-You can now run `fw` directly from anywhere!
 
 ## Usage
 
