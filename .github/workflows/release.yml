@@ -1,0 +1,47 @@
+name: Create release on tag
+
+on:
+  push:
+    tags:
+      - "v*" # for example: v0.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FILE="fw"
+
+          if [ ! -f "$FILE" ]; then
+            echo "Expected file '$FILE' not found in repo root"
+            ls -la
+            exit 1
+          fi
+
+          mkdir -p dist
+          cp "$FILE" dist/
+
+          # Create release archives
+          (cd dist && zip -9 "../fw-${GITHUB_REF_NAME}.zip" fw)
+          tar -czf "fw-${GITHUB_REF_NAME}.tar.gz" -C dist fw
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            fw-${{ github.ref_name }}.zip
+            fw-${{ github.ref_name }}.tar.gz
