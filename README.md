@@ -94,7 +94,7 @@ find ~/Workspace -type f | fw
 Set a custom preview command for `fzf`. By default, `fw` uses:
 
 ```bash
-bat --color=always --style=numbers --line-range=:500 {}
+bat --color=always --paging=never --style=plain --line-range=:150 {}
 ```
 
 Example:
