@@ -6,36 +6,43 @@ import subprocess
 import sys
 import tempfile
 from shutil import which
+from typing import List, Optional
 
 
-def check_tool(tool_name):
+def check_tool(tool_name: str) -> bool:
     """Check if a tool is installed by checking its path."""
     return which(tool_name) is not None
 
 
-def get_file_lister():
+def is_binary(file_path: str) -> bool:
+    """Check if a file is binary by looking for null bytes in the first block."""
+    try:
+        with open(file_path, "rb") as f:
+            chunk = f.read(1024)
+            return b"\x00" in chunk
+    except Exception:
+        return True
+
+
+def get_file_lister() -> Optional[str]:
     """Determine the best available file listing tool."""
-    if check_tool("fd"):
-        return "fd"
-    if check_tool("fdfind"):
-        return "fdfind"
-    if check_tool("rg"):
-        return "rg"
-    if check_tool("find"):
-        return "find"
+    for tool in ["fd", "fdfind", "rg", "find"]:
+        if check_tool(tool):
+            return tool
     return None
 
 
-def get_previewer():
+def get_previewer() -> Optional[str]:
     """Determine the best available file previewing tool."""
-    if check_tool("bat"):
-        return "bat"
-    if check_tool("cat"):
-        return "cat"
+    for tool in ["bat", "cat"]:
+        if check_tool(tool):
+            return tool
     return None
 
 
-def build_file_list_command(lister, directory, hidden, no_ignore):
+def build_file_list_command(
+    lister: str, directory: str, hidden: bool, no_ignore: bool
+) -> List[str]:
     """Build the command to list files based on the available tool."""
     if lister in ["fd", "fdfind"]:
         cmd = [lister, "--type", "f", "--exclude", ".git", ".", directory]
@@ -45,253 +52,156 @@ def build_file_list_command(lister, directory, hidden, no_ignore):
             cmd.append("--no-ignore")
         return cmd
     if lister == "rg":
-        cmd = ["rg", "--files", "--glob", "!'.git'"]
-        if not hidden:
-            # rg respects .gitignore by default, --no-hidden disables honoring .hidden files
-            cmd.append("--no-hidden")
+        cmd = ["rg", "--files", "--glob", "!.git/*"]
+        if hidden:
+            cmd.append("--hidden")
         if no_ignore:
             cmd.append("--no-ignore")
         cmd.append(directory)
         return cmd
-    if lister == "find":
-        # find does not natively respect .gitignore, so --no-ignore has no effect.
-        # We exclude the .git directory as a baseline.
-        cmd = [
-            "find",
-            directory,
-            "-path",
-            os.path.join(directory, ".git"),
-            "-prune",
-            "-o",
-            "-type",
-            "f",
-            "-print",
-        ]
-        if not hidden:
-            # Exclude other hidden files and directories.
-            # This is more complex with find; this is a reasonable approximation.
-            cmd = [
-                "find",
-                directory,
-                "-name",
-                ".git",
-                "-prune",
-                "-o",
-                "-name",
-                ".*",
-                "-prune",
-                "-o",
-                "-type",
-                "f",
-                "-print",
-            ]
-        return cmd
-    return None
+    # Fallback to find
+    cmd = ["find", directory, "-path", "*/.git", "-prune", "-o", "-type", "f"]
+    if not hidden:
+        cmd.extend(["-not", "-path", "*/.*"])
+    cmd.append("-print")
+    return cmd
 
 
-def get_preview_command(previewer):
-    """Get the appropriate preview command."""
+def get_preview_command(previewer: str) -> str:
+    """Get the appropriate preview command for fzf."""
     if previewer == "bat":
         return "bat --color=always --paging=never --style=plain --line-range=:150 {}"
-    if previewer == "cat":
-        # Using head to prevent previewing very large files.
-        return "cat {} | head -n 500"
-    return "echo 'No previewer (bat or cat) found.'"
+    return "cat {} | head -n 500"
 
 
-def run_fzf(file_list, preview_cmd):
-    """Run fzf with a preview command."""
+def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
+    """Run fzf with a preview command and return selected files."""
     try:
         result = subprocess.run(
             ["fzf", "--multi", "--preview", preview_cmd],
             input="\n".join(file_list),
             text=True,
             capture_output=True,
-            check=False,  # Do not raise exception on non-zero exit code
+            check=False,
         )
         if result.returncode == 0:
-            # fzf returns selected items
-            return result.stdout.strip().split("\n")
-        if result.returncode == 130:  # fzf aborted by user (e.g., Ctrl-C, Esc)
-            print("fzf selection aborted.")
+            return [f.strip() for f in result.stdout.split("\n") if f.strip()]
+        if result.returncode == 130:
+            print("Selection aborted by user.")
             return []
-        if result.returncode not in [
-            0,
-            1,
-        ]:  # 1 means no match, which is not an error here
-            print(
-                f"fzf exited with an unexpected error (code {result.returncode}):\n{result.stderr}",
-                file=sys.stderr,
-            )
         return []
     except Exception as e:
         print(f"Error running fzf: {e}", file=sys.stderr)
         sys.exit(1)
 
 
-def combine_files(selected_files, output_file, base_directory):
-    """Combine selected files into the output file."""
+def combine_files(
+    selected_files: List[str], output_file: str, base_directory: str
+) -> None:
+    """Combine selected files into the output file with metadata markers."""
     try:
-        with open(output_file, "w") as f:
-            for file in selected_files:
-                if not file:  # Skip empty lines that might result from fzf output
+        with open(output_file, "w", encoding="utf-8") as f:
+            for file_path in selected_files:
+                if not os.path.isfile(file_path):
                     continue
-                # Get relative path
+
                 try:
-                    relative_path = os.path.relpath(file, base_directory)
-                except Exception:  # Fallback to absolute path if relative fails
-                    relative_path = file
-                f.write(f"<<< START OF FILE: {relative_path} >>>\n")
+                    rel_path = os.path.relpath(file_path, base_directory)
+                except ValueError:
+                    rel_path = file_path
+
+                f.write(f"<<< START OF FILE: {rel_path} >>>\n")
                 try:
-                    with open(file, "r", errors="ignore") as infile:
+                    with open(
+                        file_path, "r", encoding="utf-8", errors="replace"
+                    ) as infile:
                         f.write(infile.read())
                 except Exception as e:
-                    f.write(f"Error reading file {relative_path}: {e}\n")
-                f.write(f"\n<<< END OF FILE: {relative_path} >>>\n\n")
+                    f.write(f"Error reading file {rel_path}: {e}\n")
+                f.write(f"\n<<< END OF FILE: {rel_path} >>>\n\n")
     except Exception as e:
-        print(f"Error combining files into {output_file}: {e}", file=sys.stderr)
+        print(f"Error writing to {output_file}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Interactive file selector and combiner with fallbacks."
+        description="Interactive file selector and combiner for AI context."
     )
-    parser.add_argument(
-        "directory",
-        nargs="?",
-        default=".",
-        help="Directory to search for files (default: current directory).",
-    )
+    parser.add_argument("directory", nargs="?", default=".", help="Target directory.")
     parser.add_argument(
         "-H", "--hidden", action="store_true", help="Include hidden files."
     )
     parser.add_argument(
-        "-I",
-        "--no-ignore",
-        action="store_true",
-        help="Do not follow VCS ignore rules (fd/rg only).",
+        "-I", "--no-ignore", action="store_true", help="Ignore VCS rules."
     )
-    parser.add_argument(
-        "-O", "--output", type=str, help="Specify a custom output file path."
-    )
+    parser.add_argument("-O", "--output", type=str, help="Output file path.")
     args = parser.parse_args()
 
     if not check_tool("fzf"):
-        print(
-            "Error: fzf is not installed. It is a mandatory dependency.",
-            file=sys.stderr,
-        )
+        print("Error: fzf is required but not installed.", file=sys.stderr)
         sys.exit(1)
 
     directory = os.path.abspath(args.directory)
     if not os.path.isdir(directory):
-        print(f"Error: '{directory}' is not a valid directory.", file=sys.stderr)
+        print(f"Error: '{directory}' is not a directory.", file=sys.stderr)
         sys.exit(1)
 
-    file_list = []
-    if sys.stdin.isatty():  # No piped input, so we find files
+    if sys.stdin.isatty():
         lister = get_file_lister()
         if not lister:
-            print(
-                "Error: No file lister found. Please install fd (or fdfind), rg, or find.",
-                file=sys.stderr,
-            )
+            print("Error: No file lister (fd, rg, find) found.", file=sys.stderr)
             sys.exit(1)
 
-        print(f"Using '{lister}' to find files.")
         lister_cmd = build_file_list_command(
             lister, directory, args.hidden, args.no_ignore
         )
-
-        assert lister_cmd is not None, "Lister command should not be None"
-
         try:
             result = subprocess.run(
                 lister_cmd, capture_output=True, text=True, check=True
             )
-            file_list = result.stdout.strip().splitlines()
-        except FileNotFoundError:
-            print(
-                f"Error: The command '{lister_cmd[0]}' was not found, though a path for it was detected.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+            raw_files = result.stdout.strip().splitlines()
+            # Filter out binary files for a cleaner selection
+            file_list = [f for f in raw_files if not is_binary(f)]
         except subprocess.CalledProcessError as e:
-            print(
-                f"Error running '{' '.join(lister_cmd)}':\n{e.stderr}", file=sys.stderr
-            )
+            print(f"Error listing files: {e.stderr}", file=sys.stderr)
             sys.exit(1)
     else:
-        file_list = [line.strip() for line in sys.stdin]
+        file_list = [line.strip() for line in sys.stdin if line.strip()]
 
     if not file_list:
-        print("No input files found.")
+        print("No files found.")
         return
 
-    preview_cmd = os.getenv("FW_PREVIEW_CMD")
-    if preview_cmd:
-        print(f"Using custom preview command from $FW_PREVIEW_CMD: {preview_cmd}")
-    else:
-        previewer = get_previewer()
-        if previewer:
-            print(f"Using '{previewer}' for file previews.")
-            preview_cmd = get_preview_command(previewer)
-        else:
-            print("No previewer found (bat or cat). Previews will be disabled.")
-            preview_cmd = "echo 'No previewer available.'"
-
+    preview_cmd = os.getenv("FW_PREVIEW_CMD") or get_preview_command(
+        get_previewer() or "none"
+    )
     selected_files = run_fzf(file_list, preview_cmd)
-    if not selected_files or all(not s for s in selected_files):
-        print("No files selected. Exiting.")
+
+    if not selected_files:
         return
 
-    output_file_path = args.output
-    is_temp_file = not output_file_path
+    output_path = args.output
+    is_temp = not output_path
 
-    if is_temp_file:
-        try:
-            with tempfile.NamedTemporaryFile(
-                mode="w+", delete=False, prefix="combined_files_", suffix=".txt"
-            ) as tf:
-                output_file_path = tf.name
-        except Exception as e:
-            print(f"Error creating temporary file: {e}", file=sys.stderr)
-            sys.exit(1)
+    if is_temp:
+        fd, output_path = tempfile.mkstemp(prefix="fw_", suffix=".txt")
+        os.close(fd)
 
-    print(f"Combining {len(selected_files)} file(s)...")
-    combine_files(selected_files, output_file_path, directory)
-    print(f"Combined content is in: {output_file_path}")
+    combine_files(selected_files, output_path, directory)
+    print(f"Combined {len(selected_files)} files into {output_path}")
 
     editor = os.getenv("EDITOR") or os.getenv("VISUAL") or "vi"
     try:
-        subprocess.run([editor, output_file_path], check=True)
-    except FileNotFoundError:
-        print(
-            f"Editor '{editor}' not found. Please open the file manually.",
-            file=sys.stderr,
-        )
-    except subprocess.CalledProcessError:
-        print(
-            f"Editor '{editor}' closed with an error. The file is saved at {output_file_path}.",
-            file=sys.stderr,
-        )
+        subprocess.run([editor, output_path], check=True)
     except Exception as e:
-        print(
-            f"An error occurred while trying to open the editor: {e}", file=sys.stderr
-        )
+        print(f"Could not open editor: {e}", file=sys.stderr)
 
-    if is_temp_file:
+    if is_temp:
         try:
-            os.remove(output_file_path)
-            print("Temporary file deleted.")
-        except OSError as e:
-            print(
-                f"Error deleting temporary file {output_file_path}: {e}",
-                file=sys.stderr,
-            )
-
-    print("Bye from fw!")
+            os.remove(output_path)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
