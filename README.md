@@ -119,8 +119,7 @@ The combined output uses clear markers for easy parsing:
 ## Acknowledgements
 
 - [fzf](https://github.com/junegunn/fzf) — Fuzzy finder
-- [fd](https://github.com/sharkdp/fd) — Fast file finder
-- [ripgrep](https://github.com/BurntSushi/ripgrep) — Fast grep
+- [fd](https://github.com/sharkdp/fd) & [ripgrep](https://github.com/BurntSushi/ripgrep) — Fast file finder
 - [bat](https://github.com/sharkdp/bat) — Cat with syntax highlighting
 
 ## License
