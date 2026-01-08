@@ -120,7 +120,7 @@ The combined output uses clear markers for easy parsing:
 
 - [fzf](https://github.com/junegunn/fzf) — Fuzzy finder
 - [fd](https://github.com/sharkdp/fd) & [ripgrep](https://github.com/BurntSushi/ripgrep) — Fast file finder
-- [bat](https://github.com/sharkdp/bat) — Cat with syntax highlighting
+- [bat](https://github.com/sharkdp/bat) — Better previewer
 
 ## License
 
