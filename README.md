@@ -125,4 +125,4 @@ The combined output uses clear markers for easy parsing:
 
 ## License
 
-MIT © [Yilin Fang](https://github.com/yilinfang)
+MIT &copy; [Yilin Fang](https://github.com/yilinfang)
