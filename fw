@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+fw - File selector and combiner for AI context.
+
+A lightweight CLI tool that allows users to interactively select files using fzf,
+preview their contents, and combine them into a single output file ready for
+pasting into AI assistants like ChatGPT or Claude.
+"""
 
 import argparse
 import os
@@ -8,14 +15,30 @@ import tempfile
 from shutil import which
 from typing import List, Optional
 
+__version__ = "1.0.0"
+
 
 def check_tool(tool_name: str) -> bool:
-    """Check if a tool is installed by checking its path."""
+    """Check if a tool is installed by checking its path.
+
+    Args:
+        tool_name: Name of the command-line tool to check.
+
+    Returns:
+        True if the tool is found in PATH, False otherwise.
+    """
     return which(tool_name) is not None
 
 
 def is_binary(file_path: str) -> bool:
-    """Check if a file is binary by looking for null bytes in the first block."""
+    """Check if a file is binary by looking for null bytes in the first block.
+
+    Args:
+        file_path: Path to the file to check.
+
+    Returns:
+        True if the file appears to be binary, False otherwise.
+    """
     try:
         with open(file_path, "rb") as f:
             chunk = f.read(1024)
@@ -25,7 +48,11 @@ def is_binary(file_path: str) -> bool:
 
 
 def get_file_lister() -> Optional[str]:
-    """Determine the best available file listing tool."""
+    """Determine the best available file listing tool.
+
+    Returns:
+        Name of the available tool (fd, fdfind, rg, or find), or None if none found.
+    """
     for tool in ["fd", "fdfind", "rg", "find"]:
         if check_tool(tool):
             return tool
@@ -33,7 +60,11 @@ def get_file_lister() -> Optional[str]:
 
 
 def get_previewer() -> Optional[str]:
-    """Determine the best available file previewing tool."""
+    """Determine the best available file previewing tool.
+
+    Returns:
+        Name of the available tool (bat or cat), or None if none found.
+    """
     for tool in ["bat", "cat"]:
         if check_tool(tool):
             return tool
@@ -43,7 +74,17 @@ def get_previewer() -> Optional[str]:
 def build_file_list_command(
     lister: str, directory: str, hidden: bool, no_ignore: bool
 ) -> List[str]:
-    """Build the command to list files based on the available tool."""
+    """Build the command to list files based on the available tool.
+
+    Args:
+        lister: Name of the file listing tool to use.
+        directory: Directory to search in.
+        hidden: Whether to include hidden files.
+        no_ignore: Whether to ignore .gitignore rules.
+
+    Returns:
+        List of command arguments to execute.
+    """
     if lister in ["fd", "fdfind"]:
         cmd = [lister, "--type", "f", "--exclude", ".git", ".", directory]
         if hidden:
@@ -68,14 +109,29 @@ def build_file_list_command(
 
 
 def get_preview_command(previewer: str) -> str:
-    """Get the appropriate preview command for fzf."""
+    """Get the appropriate preview command for fzf.
+
+    Args:
+        previewer: Name of the previewer tool (bat or cat).
+
+    Returns:
+        Preview command string for fzf.
+    """
     if previewer == "bat":
         return "bat --color=always --paging=never --style=plain --line-range=:150 {}"
     return "cat {} | head -n 500"
 
 
 def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
-    """Run fzf with a preview command and return selected files."""
+    """Run fzf with a preview command and return selected files.
+
+    Args:
+        file_list: List of file paths to present in fzf.
+        preview_cmd: Preview command for fzf to use.
+
+    Returns:
+        List of selected file paths, or empty list if selection was cancelled.
+    """
     try:
         result = subprocess.run(
             ["fzf", "--multi", "--preview", preview_cmd],
@@ -87,7 +143,6 @@ def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
         if result.returncode == 0:
             return [f.strip() for f in result.stdout.split("\n") if f.strip()]
         if result.returncode == 130:
-            print("Selection aborted by user.")
             return []
         return []
     except Exception as e:
@@ -95,10 +150,51 @@ def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
         sys.exit(1)
 
 
+def format_size(size_bytes: int) -> str:
+    """Format a byte size into a human-readable string.
+
+    Args:
+        size_bytes: Size in bytes.
+
+    Returns:
+        Human-readable size string (e.g., "1.5 KB", "2.3 MB").
+    """
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+
+def get_total_size(file_paths: List[str]) -> int:
+    """Calculate the total size of a list of files.
+
+    Args:
+        file_paths: List of file paths.
+
+    Returns:
+        Total size in bytes.
+    """
+    total = 0
+    for path in file_paths:
+        try:
+            total += os.path.getsize(path)
+        except OSError:
+            pass
+    return total
+
+
 def combine_files(
     selected_files: List[str], output_file: str, base_directory: str
 ) -> None:
-    """Combine selected files into the output file with metadata markers."""
+    """Combine selected files into the output file with metadata markers.
+
+    Args:
+        selected_files: List of file paths to combine.
+        output_file: Path to the output file.
+        base_directory: Base directory for computing relative paths.
+    """
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             for file_path in selected_files:
@@ -125,21 +221,42 @@ def combine_files(
 
 
 def main() -> None:
+    """Main entry point for the fw command."""
     parser = argparse.ArgumentParser(
-        description="Interactive file selector and combiner for AI context."
+        description="Interactive file selector and combiner for AI context.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  fw                      Select files from current directory
+  fw ~/project            Select files from ~/project
+  fw -H                   Include hidden files
+  fw -I                   Ignore .gitignore rules
+  fw -O out.txt           Save to specific output file
+  find . -name "*.py" | fw   Use piped input
+        """,
     )
     parser.add_argument("directory", nargs="?", default=".", help="Target directory.")
     parser.add_argument(
         "-H", "--hidden", action="store_true", help="Include hidden files."
     )
     parser.add_argument(
-        "-I", "--no-ignore", action="store_true", help="Ignore VCS rules."
+        "-I", "--no-ignore", action="store_true", help="Ignore VCS ignore rules."
     )
     parser.add_argument("-O", "--output", type=str, help="Output file path.")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show verbose output."
+    )
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"fw {__version__}"
+    )
     args = parser.parse_args()
 
     if not check_tool("fzf"):
-        print("Error: fzf is required but not installed.", file=sys.stderr)
+        print(
+            "Error: fzf is required but not installed.\n"
+            "Install it from: https://github.com/junegunn/fzf",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     directory = os.path.abspath(args.directory)
@@ -189,7 +306,13 @@ def main() -> None:
         os.close(fd)
 
     combine_files(selected_files, output_path, directory)
-    print(f"Combined {len(selected_files)} files into {output_path}")
+
+    if args.verbose:
+        total_size = get_total_size(selected_files)
+        print(
+            f"Combined {len(selected_files)} file(s) ({format_size(total_size)}) "
+            f"into {output_path}"
+        )
 
     editor = os.getenv("EDITOR") or os.getenv("VISUAL") or "vi"
     try:

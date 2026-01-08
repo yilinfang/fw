@@ -1,128 +1,128 @@
-# fw - File Selector and Combiner
+# fw — File Selector and Combiner
 
-`fw` is a lightweight command-line tool that allows users to interactively select files from a directory or piped input using `fzf`, preview their contents, and combine them into a single output file.
+> **Quickly select and combine files into context for ChatGPT, Claude, and other LLMs.**
+
+[![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/yilinfang/fw)](https://github.com/yilinfang/fw/releases)
+
+## Why fw?
+
+When working with AI assistants like ChatGPT or Claude, you often need to share multiple source files as context. Manually copying and pasting each file is tedious and error-prone. `fw` solves this by letting you:
+
+1. **Interactively browse and select** files with fuzzy search (`fzf`)
+2. **Preview file contents** before selecting
+3. **Combine them into a single file** with clear separators
+4. **Open in your editor** to review/copy the result
+
+The output format uses clear `<<< START OF FILE >>>` / `<<< END OF FILE >>>` markers that AI assistants can easily parse and understand.
 
 ## Features
 
-- **Interactive File Selection**: Use `fzf` to interactively select multiple files.
-- **Customizable Preview**: Preview file contents with `bat` or a custom preview command.
-- **File Combination**: Combine selected files into a single output file with clear separators.
-- **Directory Scanning**: Search for files using `fd` or `ripgrep` with options to include hidden files or ignore `.gitignore` rules.
-- **Piped Input Support**: Accept file lists from piped input for maximum flexibility.
-- **Temporary or Custom Output**: Save the combined output to a temporary file or a user-specified file path.
-- **Editor Integration**: Automatically open the combined file in your preferred editor (`$EDITOR`, `$VISUAL`, or `vi`).
+- **Interactive File Selection** — Use `fzf` to fuzzy-search and multi-select files
+- **Live Preview** — Preview file contents with `bat` (with syntax highlighting) or `cat`
+- **Smart File Discovery** — Automatically uses `fd`, `ripgrep`, or `find` (whichever is available)
+- **Respects .gitignore** — Skips ignored files by default (override with `-I`)
+- **Hidden Files Support** — Include dotfiles with `-H`
+- **Piped Input** — Works with `find`, `rg`, or any command that outputs file paths
+- **Editor Integration** — Opens combined output in `$EDITOR` for easy copying
 
 ## Installation
 
 ### Prerequisites
 
-Make sure the following tools are installed on your system:
+- [`python3`](https://www.python.org/) (3.6+)
+- [`fzf`](https://github.com/junegunn/fzf) (required)
+- [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional, faster file listing)
+- [`bat`](https://github.com/sharkdp/bat) (optional, syntax-highlighted previews)
 
-- [`python3`](https://www.python.org/)
-- [`fzf`](https://github.com/junegunn/fzf)
-- [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional)
-- [`bat`](https://github.com/sharkdp/bat) (optional)
-
-### Using `mise` (recommended)
+### Using mise (recommended)
 
 ```bash
 mise use github:yilinfang/fw
-# Or if you want to install it globally
+# Or install globally
 mise use -g github:yilinfang/fw
 ```
 
 ### Manual Installation
 
-1. Download the latest `fw` from [Releases](https://github.com/yilinfang/fw/releases).
-
-2. Unarchive the downloaded file and make `fw` executable.
-
-3. Move `fw` file to a directory in your `$PATH` (e.g., `/usr/local/bin`).
+1. Download the latest `fw` from [Releases](https://github.com/yilinfang/fw/releases)
+2. Make it executable: `chmod +x fw`
+3. Move to a directory in your `$PATH` (e.g., `/usr/local/bin/`)
 
 ## Usage
 
-### Basic Syntax
-
 ```bash
-fw [directory] [--hidden] [--no-ignore] [--output OUTPUT]
+fw [directory] [options]
 ```
+
+### Options
+
+| Option              | Description                            |
+| ------------------- | -------------------------------------- |
+| `-H, --hidden`      | Include hidden files                   |
+| `-I, --no-ignore`   | Ignore .gitignore rules                |
+| `-O, --output FILE` | Save to specific output file           |
+| `-v, --verbose`     | Show verbose output (file count, size) |
+| `-V, --version`     | Show version and exit                  |
 
 ### Examples
 
-#### Select Files from the Current Directory
-
 ```bash
+# Select files from current directory
 fw
-```
 
-#### Select Files from a Specific Directory
+# Select files from a specific directory
+fw ~/project
 
-```bash
-fw ~/Workspace
-```
+# Include hidden files
+fw -H
 
-#### Include Hidden Files
+# Ignore .gitignore rules
+fw -I
 
-```bash
-fw ~/Workspace --hidden
-```
+# Save to a specific file
+fw -O context.txt
 
-#### Ignore `.gitignore` Rules
-
-```bash
-fw ~/Workspace --no-ignore
-```
-
-#### Specify an Output File
-
-```bash
-fw ~/Workspace --output combined.txt
-```
-
-#### Use Piped Input
-
-**When using the Piped Input, the `--hidden` and `--no-ignore` will be ignored.**
-
-```bash
-find ~/Workspace -type f | fw
+# Use with piped input
+find . -name "*.py" | fw
+rg --files -g "*.ts" | fw
 ```
 
 ## Environment Variables
 
-### `$FW_PREVIEW_CMD`
+| Variable            | Description                                              |
+| ------------------- | -------------------------------------------------------- |
+| `FW_PREVIEW_CMD`    | Custom preview command for fzf (default: `bat` or `cat`) |
+| `EDITOR` / `VISUAL` | Editor to open the combined file (default: `vi`)         |
 
-Set a custom preview command for `fzf`. By default, `fw` uses:
-
-```bash
-bat --color=always --paging=never --style=plain --line-range=:150 {}
-```
-
-Example:
+Example custom preview:
 
 ```bash
-export FW_PREVIEW_CMD="cat {}"
+export FW_PREVIEW_CMD="head -n 100 {}"
 ```
-
-### `$EDITOR` or `$VISUAL`
-
-Set your preferred text editor to open the combined output file. If not set, `fw` falls back to `vi`.
 
 ## Output Format
 
-The combined output file contains clear separators between files for easy navigation:
+The combined output uses clear markers for easy parsing:
 
-```txt
-<<< START OF FILE: file1.txt >>>
-<contents of file1.txt>
-<<< END OF FILE: file1.txt >>>
+```
+<<< START OF FILE: src/main.py >>>
+<contents of main.py>
+<<< END OF FILE: src/main.py >>>
 
-<<< START OF FILE: file2.txt >>>
-<contents of file2.txt>
-<<< END OF FILE: file2.txt >>>
+<<< START OF FILE: src/utils.py >>>
+<contents of utils.py>
+<<< END OF FILE: src/utils.py >>>
 ```
 
 ## Acknowledgements
 
-- [`fzf`](https://github.com/junegunn/fzf) for its amazing fuzzy finding capabilities.
-- [`fd`](https://github.com/sharkdp/fd) and [`ripgrep`](https://github.com/BurntSushi/ripgrep) for their fast and user-friendly file searching.
-- [`bat`](https://github.com/sharkdp/bat) for making file previews beautiful.
+- [fzf](https://github.com/junegunn/fzf) — Fuzzy finder
+- [fd](https://github.com/sharkdp/fd) — Fast file finder
+- [ripgrep](https://github.com/BurntSushi/ripgrep) — Fast grep
+- [bat](https://github.com/sharkdp/bat) — Cat with syntax highlighting
+
+## License
+
+MIT © [Yilin Fang](https://github.com/yilinfang)
