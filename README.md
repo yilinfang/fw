@@ -41,13 +41,13 @@ The output format uses clear `<<< START OF FILE >>>` / `<<< END OF FILE >>>` mar
 You can install `fw` to `~/.local/bin` by running following command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | bash
 ```
 
 To install to a different location, set the `INSTALL_DIR` variable:
 
 ```bash
-INSTALL_DIR=/path/to/bin sh -c "$(curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh)"
+INSTALL_DIR=/path/to/bin bash -c "$(curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh)"
 ```
 
 ### Using mise

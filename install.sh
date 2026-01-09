@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # install.sh - Installation script for fw (File Selector and Combiner)
-# Usage: curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | sh
-# Or: INSTALL_DIR=/path/to/bin sh install.sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | bash
+# Or: INSTALL_DIR=/path/to/bin bash install.sh
 
 set -euo pipefail
 
