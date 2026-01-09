@@ -36,7 +36,21 @@ The output format uses clear `<<< START OF FILE >>>` / `<<< END OF FILE >>>` mar
 - [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional, faster file listing)
 - [`bat`](https://github.com/sharkdp/bat) (optional, syntax-highlighted previews)
 
-### Using mise (recommended)
+### One-line Installation (recommended)
+
+You can install `fw` to `~/.local/bin` by running following command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | sh
+```
+
+To install to a different location, set the `INSTALL_DIR` variable:
+
+```bash
+INSTALL_DIR=/path/to/bin sh -c "$(curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh)"
+```
+
+### Using mise
 
 ```bash
 mise use github:yilinfang/fw
