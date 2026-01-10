@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # install.sh - Installation script for fw (File Selector and Combiner)
-# Usage: curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | bash
-# Or: INSTALL_DIR=/path/to/bin bash install.sh
+# Usage: bash install.sh
+# Or: FW_INSTALL_DIR=/path/to/bin bash install.sh
 
 set -euo pipefail
 
@@ -37,7 +37,7 @@ if ! command -v fzf >/dev/null 2>&1; then
 fi
 
 # --- Installation Directory ---
-INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
+INSTALL_DIR="${FW_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 mkdir -p "$INSTALL_DIR"
 
 # --- Get Latest Release ---
