@@ -15,7 +15,7 @@ import tempfile
 from shutil import which
 from typing import List, Optional
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def check_tool(tool_name: str) -> bool:
@@ -220,6 +220,32 @@ def combine_files(
         sys.exit(1)
 
 
+def self_update() -> None:
+    """Update fw to the latest release by running install.sh."""
+    script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    install_url = "https://raw.githubusercontent.com/yilinfang/fw/main/install.sh"
+    env = dict(os.environ, FW_INSTALL_DIR=script_dir)
+
+    if which("curl"):
+        fetch_cmd = "curl -fsSL {}".format(install_url)
+    elif which("wget"):
+        fetch_cmd = "wget -qO- {}".format(install_url)
+    else:
+        print("Error: Neither curl nor wget found.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        subprocess.run(
+            "{} | bash".format(fetch_cmd),
+            shell=True,
+            check=True,
+            env=env,
+        )
+    except subprocess.CalledProcessError as e:
+        print("Error during update: {}".format(e), file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
     """Main entry point for the fw command."""
     parser = argparse.ArgumentParser(
@@ -249,7 +275,14 @@ Examples:
     parser.add_argument(
         "-V", "--version", action="version", version=f"fw {__version__}"
     )
+    parser.add_argument(
+        "--self-update", action="store_true", help="Update fw to the latest version."
+    )
     args = parser.parse_args()
+
+    if args.self_update:
+        self_update()
+        return
 
     if not check_tool("fzf"):
         print(
