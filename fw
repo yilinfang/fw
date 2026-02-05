@@ -359,7 +359,7 @@ Examples:
             f"into {output_path}"
         )
 
-    editor = os.getenv("EDITOR") or os.getenv("VISUAL") or "vi"
+    editor = os.getenv("VISUAL") or os.getenv("EDITOR") or "vi"
     try:
         subprocess.run([editor, output_path], check=True)
     except Exception as e:
