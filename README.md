@@ -10,7 +10,7 @@
 
 When working with AI assistants like ChatGPT or Claude, you often need to share multiple source files as context. Manually copying and pasting each file is tedious and error-prone. `fw` solves this by letting you:
 
-1. **Interactively browse and select** files with fuzzy search (`fzf`)
+1. **Interactively browse and select** files with fuzzy search (`fzf` or `sk`)
 2. **Preview file contents** before selecting
 3. **Combine them into a single file** with clear separators
 4. **Open in your editor** to review/copy the result
@@ -19,7 +19,7 @@ The output format uses clear `<<< START OF FILE >>>` / `<<< END OF FILE >>>` mar
 
 ## Features
 
-- **Interactive File Selection** — Use `fzf` to fuzzy-search and multi-select files
+- **Interactive File Selection** — Use `fzf` or `sk` (skim) to fuzzy-search and multi-select files
 - **Live Preview** — Preview file contents with `bat` (with syntax highlighting) or `cat`
 - **Smart File Discovery** — Automatically uses `fd`, `ripgrep`, or `find` (whichever is available)
 - **Respects .gitignore** — Skips ignored files by default (override with `-I`)
@@ -32,7 +32,7 @@ The output format uses clear `<<< START OF FILE >>>` / `<<< END OF FILE >>>` mar
 ### Prerequisites
 
 - [`python3`](https://www.python.org/) (3.6+)
-- [`fzf`](https://github.com/junegunn/fzf) (required)
+- [`fzf`](https://github.com/junegunn/fzf) or [`skim`](https://github.com/skim-rs/skim) (required)
 - [`fd`](https://github.com/sharkdp/fd) or [`ripgrep`](https://github.com/BurntSushi/ripgrep) (optional, faster file listing)
 - [`bat`](https://github.com/sharkdp/bat) (optional, syntax-highlighted previews)
 
@@ -132,7 +132,7 @@ The combined output uses clear markers for easy parsing:
 
 ## Acknowledgements
 
-- [fzf](https://github.com/junegunn/fzf) — Fuzzy finder
+- [fzf](https://github.com/junegunn/fzf) & [skim](https://github.com/lotabout/skim) — Fuzzy finder
 - [fd](https://github.com/sharkdp/fd) & [ripgrep](https://github.com/BurntSushi/ripgrep) — Fast file finder
 - [bat](https://github.com/sharkdp/bat) — Better previewer
 

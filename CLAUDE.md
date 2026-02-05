@@ -1,6 +1,6 @@
 # fw
 
-Single-file Python CLI tool that interactively selects files via `fzf` and combines them into a single output for pasting into AI assistants.
+Single-file Python CLI tool that interactively selects files via `fzf` (or `sk`) and combines them into a single output for pasting into AI assistants.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Single-file Python CLI tool that interactively selects files via `fzf` and combi
 
 - Python 3.6+ compatibility required.
 - Standard library only — no third-party dependencies.
-- External tool dependency chain: `fzf` (required), `bat` (optional, for preview).
+- External tool dependency chain: `fzf` or `sk` (required), `bat` (optional, for preview).
 - CLI argument parsing via `argparse`.
 
 ## Build / Test / Lint

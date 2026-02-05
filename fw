@@ -2,9 +2,9 @@
 """
 fw - File selector and combiner for AI context.
 
-A lightweight CLI tool that allows users to interactively select files using fzf,
-preview their contents, and combine them into a single output file ready for
-pasting into AI assistants like ChatGPT or Claude.
+A lightweight CLI tool that allows users to interactively select files using fzf
+or skim, preview their contents, and combine them into a single output file
+ready for pasting into AI assistants like ChatGPT or Claude.
 """
 
 import argparse
@@ -50,6 +50,18 @@ def get_previewer() -> Optional[str]:
         Name of the available tool (bat or cat), or None if none found.
     """
     for tool in ["bat", "cat"]:
+        if check_tool(tool):
+            return tool
+    return None
+
+
+def get_fuzzy_finder() -> Optional[str]:
+    """Determine the best available fuzzy finder tool.
+
+    Returns:
+        Name of the available tool (fzf or sk), or None if none found.
+    """
+    for tool in ["fzf", "sk"]:
         if check_tool(tool):
             return tool
     return None
@@ -106,10 +118,11 @@ def get_preview_command(previewer: str) -> str:
     return "cat {} | head -n 500"
 
 
-def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
+def run_fzf(fzf_cmd: str, file_list: List[str], preview_cmd: str) -> List[str]:
     """Run fzf with a preview command and return selected files.
 
     Args:
+        fzf_cmd: Command name for the fuzzy finder (fzf or sk).
         file_list: List of file paths to present in fzf.
         preview_cmd: Preview command for fzf to use.
 
@@ -118,7 +131,7 @@ def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
     """
     try:
         result = subprocess.run(
-            ["fzf", "--multi", "--preview", preview_cmd],
+            [fzf_cmd, "--multi", "--preview", preview_cmd],
             input="\n".join(file_list),
             text=True,
             capture_output=True,
@@ -134,10 +147,13 @@ def run_fzf(file_list: List[str], preview_cmd: str) -> List[str]:
         sys.exit(1)
 
 
-def run_fzf_with_command(lister_cmd: List[str], preview_cmd: str) -> List[str]:
+def run_fzf_with_command(
+    fzf_cmd: str, lister_cmd: List[str], preview_cmd: str
+) -> List[str]:
     """Run a file lister piped directly into fzf, returning selected files.
 
     Args:
+        fzf_cmd: Command name for the fuzzy finder (fzf or sk).
         lister_cmd: Command to list files.
         preview_cmd: Preview command for fzf to use.
 
@@ -149,7 +165,7 @@ def run_fzf_with_command(lister_cmd: List[str], preview_cmd: str) -> List[str]:
             lister_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
         fzf_proc = subprocess.Popen(
-            ["fzf", "--multi", "--preview", preview_cmd],
+            [fzf_cmd, "--multi", "--preview", preview_cmd],
             stdin=lister_proc.stdout,
             stdout=subprocess.PIPE,
             stderr=None,
@@ -289,10 +305,12 @@ Examples:
         self_update()
         return
 
-    if not check_tool("fzf"):
+    fzf_tool = get_fuzzy_finder()
+    if not fzf_tool:
         print(
-            "Error: fzf is required but not installed.\n"
-            "Install it from: https://github.com/junegunn/fzf",
+            "Error: fzf or sk (skim) is required but not installed.\n"
+            "Install fzf from: https://github.com/junegunn/fzf\n"
+            "Or skim from: https://github.com/lotabout/skim",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -315,13 +333,13 @@ Examples:
         lister_cmd = build_file_list_command(
             lister, directory, args.hidden, args.no_ignore
         )
-        selected_files = run_fzf_with_command(lister_cmd, preview_cmd)
+        selected_files = run_fzf_with_command(fzf_tool, lister_cmd, preview_cmd)
     else:
         file_list = [line.strip() for line in sys.stdin if line.strip()]
         if not file_list:
             print("No files found.")
             return
-        selected_files = run_fzf(file_list, preview_cmd)
+        selected_files = run_fzf(fzf_tool, file_list, preview_cmd)
 
     if not selected_files:
         return
