@@ -1,19 +1,26 @@
 # fw
 
-Single-file Python CLI tool that interactively selects files via `fzf` (or `sk`) and combines them into a single output for pasting into AI assistants.
+Single-file Python 3 CLI tool. Interactively selects files via `fzf`/`sk` and combines them into a single output for AI assistants.
 
 ## Architecture
 
-- `fw` — Single 331-line Python 3 executable script. No modules, no packages.
-- `install.sh` — Installation helper script.
+- `fw` — Single executable Python script (`#!/usr/bin/env python3`). No modules, no packages.
+- `install.sh` — Bash installation helper.
 
 ## Conventions
 
 - Python 3.6+ compatibility required.
 - Standard library only — no third-party dependencies.
-- External tool dependency chain: `fzf` or `sk` (required), `bat` (optional, for preview).
-- CLI argument parsing via `argparse`.
+- External tools: `fzf` or `sk` (required), `bat` (optional preview).
+- CLI parsing via `argparse`; type hints from `typing`.
+- Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, etc.).
 
-## Build / Test / Lint
+## Testing
 
-No build step, no test suite, no linter configuration. The script is run directly as `fw`.
+No automated test suite. Verify changes manually:
+
+```sh
+./fw --help
+./fw --version
+./fw              # interactive selection via fzf/sk
+```
