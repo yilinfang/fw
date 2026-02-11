@@ -14,6 +14,7 @@ Single-file Python 3 CLI tool. Interactively selects files via `fzf`/`sk` and co
 - External tools: `fzf` or `sk` (required), `bat` (optional preview).
 - CLI parsing via `argparse`; type hints from `typing`.
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, etc.).
+- Linting and formatting with `ruff`.
 
 ## Testing
 
