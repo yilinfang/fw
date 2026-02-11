@@ -9,6 +9,7 @@ ready for pasting into AI assistants like ChatGPT or Claude.
 
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -161,20 +162,36 @@ def run_fzf_with_command(
         List of selected file paths, or empty list if selection was cancelled.
     """
     try:
-        lister_proc = subprocess.Popen(
-            lister_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-        )
-        fzf_proc = subprocess.Popen(
-            [fzf_cmd, "--multi", "--preview", preview_cmd],
-            stdin=lister_proc.stdout,
-            stdout=subprocess.PIPE,
-            stderr=None,
-            text=True,
-        )
-        # Allow lister to receive SIGPIPE if fzf exits early
-        lister_proc.stdout.close()
-        stdout, _ = fzf_proc.communicate()
-        lister_proc.wait()
+        # Capture lister stderr in a real file to avoid deadlocks from PIPE backpressure.
+        with tempfile.TemporaryFile(mode="w+t") as lister_stderr_file:
+            lister_proc = subprocess.Popen(
+                lister_cmd,
+                stdout=subprocess.PIPE,
+                stderr=lister_stderr_file,
+                text=True,
+            )
+            fzf_proc = subprocess.Popen(
+                [fzf_cmd, "--multi", "--preview", preview_cmd],
+                stdin=lister_proc.stdout,
+                stdout=subprocess.PIPE,
+                stderr=None,
+                text=True,
+            )
+            # Allow lister to receive SIGPIPE if fzf exits early
+            lister_proc.stdout.close()
+            stdout, _ = fzf_proc.communicate()
+            lister_returncode = lister_proc.wait()
+
+            lister_stderr_file.seek(0)
+            lister_stderr = lister_stderr_file.read().strip()
+
+            # Ignore SIGPIPE-style exits when fzf exits early/cancelled.
+            if lister_returncode not in (0, 141, -13) and fzf_proc.returncode != 130:
+                if lister_stderr:
+                    print(f"Error listing files: {lister_stderr}", file=sys.stderr)
+                else:
+                    print("Error listing files.", file=sys.stderr)
+
         if fzf_proc.returncode == 0:
             return [f.strip() for f in stdout.split("\n") if f.strip()]
         return []
@@ -390,12 +407,19 @@ Examples:
         )
 
     editor = os.getenv("VISUAL") or os.getenv("EDITOR") or "vi"
+    editor_success = False
     try:
-        subprocess.run([editor, output_path], check=True)
+        editor_cmd = shlex.split(editor)
+        if not editor_cmd:
+            raise ValueError("editor command is empty")
+        subprocess.run([*editor_cmd, output_path], check=True)
+        editor_success = True
     except Exception as e:
         print(f"Could not open editor: {e}", file=sys.stderr)
+        if is_temp:
+            print(f"Combined output preserved at: {output_path}", file=sys.stderr)
 
-    if is_temp:
+    if is_temp and editor_success:
         try:
             os.remove(output_path)
         except OSError:

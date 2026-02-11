@@ -55,6 +55,7 @@ fi
 
 # --- Installation Directory ---
 INSTALL_DIR="${FW_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
+TARGET="$INSTALL_DIR/$BINARY_NAME"
 mkdir -p "$INSTALL_DIR"
 
 # --- Detect fetch tool ---
@@ -76,16 +77,16 @@ fi
 
 info "Latest release: $LATEST_RELEASE"
 
-# --- Version Comparison ---
-if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-	CURRENT_VERSION=$("$BINARY_NAME" --version 2>/dev/null | awk '{print $NF}') || true
+# --- Version Comparison (target path only) ---
+if [ -x "$TARGET" ]; then
+	CURRENT_VERSION=$("$TARGET" --version 2>/dev/null | awk '{print $NF}') || true
 	LATEST_RELEASE_CLEAN="${LATEST_RELEASE#v}"
 	if [ -n "$CURRENT_VERSION" ] && [ "$CURRENT_VERSION" = "$LATEST_RELEASE_CLEAN" ]; then
-		success "fw is already up to date ($CURRENT_VERSION)."
+		success "fw is already up to date at $TARGET ($CURRENT_VERSION)."
 		exit 0
 	fi
 	if [ -n "$CURRENT_VERSION" ]; then
-		info "Upgrading fw from $CURRENT_VERSION to $LATEST_RELEASE..."
+		info "Upgrading fw at $TARGET from $CURRENT_VERSION to $LATEST_RELEASE..."
 	fi
 fi
 
@@ -99,11 +100,11 @@ TMP_FILE=$(mktemp)
 fetch "$DOWNLOAD_URL" >"$TMP_FILE"
 
 # --- Install ---
-info "Installing to $INSTALL_DIR/$BINARY_NAME..."
-mv "$TMP_FILE" "$INSTALL_DIR/$BINARY_NAME"
-chmod +x "$INSTALL_DIR/$BINARY_NAME"
+info "Installing to $TARGET..."
+mv "$TMP_FILE" "$TARGET"
+chmod +x "$TARGET"
 
-success "fw has been installed to $INSTALL_DIR/$BINARY_NAME"
+success "fw has been installed to $TARGET"
 
 # --- PATH check ---
 case ":$PATH:" in
