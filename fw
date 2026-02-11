@@ -17,7 +17,7 @@ import tempfile
 from shutil import which
 from typing import List, Optional
 
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 
 def check_tool(tool_name: str) -> bool:
