@@ -178,7 +178,8 @@ def run_fzf_with_command(
                 text=True,
             )
             # Allow lister to receive SIGPIPE if fzf exits early
-            lister_proc.stdout.close()
+            if lister_proc.stdout is not None:
+                lister_proc.stdout.close()
             stdout, _ = fzf_proc.communicate()
             lister_returncode = lister_proc.wait()
 
