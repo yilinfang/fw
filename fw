@@ -119,12 +119,11 @@ def get_preview_command(previewer: str) -> str:
     return "cat {} | head -n 500"
 
 
-def run_fzf(fzf_cmd: str, file_list: List[str], preview_cmd: str) -> List[str]:
-    """Run fzf with a preview command and return selected files.
+def run_fzf_streaming(fzf_cmd: str, preview_cmd: str) -> List[str]:
+    """Run fzf reading file paths from standard input.
 
     Args:
         fzf_cmd: Command name for the fuzzy finder (fzf or sk).
-        file_list: List of file paths to present in fzf.
         preview_cmd: Preview command for fzf to use.
 
     Returns:
@@ -133,15 +132,14 @@ def run_fzf(fzf_cmd: str, file_list: List[str], preview_cmd: str) -> List[str]:
     try:
         result = subprocess.run(
             [fzf_cmd, "--multi", "--preview", preview_cmd],
-            input="\n".join(file_list),
+            stdin=sys.stdin,
+            stdout=subprocess.PIPE,
             text=True,
-            capture_output=True,
             check=False,
+            errors="surrogateescape",
         )
         if result.returncode == 0:
             return [f.strip() for f in result.stdout.split("\n") if f.strip()]
-        if result.returncode == 130:
-            return []
         return []
     except Exception as e:
         print(f"Error running fzf: {e}", file=sys.stderr)
@@ -169,6 +167,7 @@ def run_fzf_with_command(
                 stdout=subprocess.PIPE,
                 stderr=lister_stderr_file,
                 text=True,
+                errors="surrogateescape",
             )
             fzf_proc = subprocess.Popen(
                 [fzf_cmd, "--multi", "--preview", preview_cmd],
@@ -176,6 +175,7 @@ def run_fzf_with_command(
                 stdout=subprocess.PIPE,
                 stderr=None,
                 text=True,
+                errors="surrogateescape",
             )
             # Allow lister to receive SIGPIPE if fzf exits early
             if lister_proc.stdout is not None:
@@ -248,7 +248,7 @@ def combine_files(
                     with open(
                         file_path, "r", encoding="utf-8", errors="replace"
                     ) as infile:
-                        shutil.copyfileobj(infile, f)
+                        shutil.copyfileobj(infile, f, length=1024 * 1024)
                 except Exception as e:
                     f.write(f"Error reading file {rel_path}: {e}\n")
                 f.write(f"\n<<< END OF FILE: {rel_path} >>>\n\n")
@@ -266,15 +266,14 @@ def get_latest_version() -> Optional[str]:
         The latest version string (e.g. "1.3.0"), or None on failure.
     """
     import json
-    from urllib.error import URLError
     from urllib.request import urlopen
 
     api_url = "https://api.github.com/repos/yilinfang/fw/releases/latest"
     try:
-        with urlopen(api_url) as resp:
+        with urlopen(api_url, timeout=5.0) as resp:
             data = json.loads(resp.read().decode())
             return data.get("tag_name", "").lstrip("v") or None
-    except (URLError, ValueError, KeyError):
+    except Exception:
         return None
 
 
@@ -312,6 +311,10 @@ def self_update() -> None:
         )
     except subprocess.CalledProcessError as e:
         print("Error during update: {}".format(e), file=sys.stderr)
+        print(
+            "If fw is installed system-wide, you may need to run: sudo fw --self-update",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 
@@ -383,11 +386,7 @@ Examples:
         )
         selected_files = run_fzf_with_command(fzf_tool, lister_cmd, preview_cmd)
     else:
-        file_list = [line.strip() for line in sys.stdin if line.strip()]
-        if not file_list:
-            print("No files found.")
-            return
-        selected_files = run_fzf(fzf_tool, file_list, preview_cmd)
+        selected_files = run_fzf_streaming(fzf_tool, preview_cmd)
 
     if not selected_files:
         return
