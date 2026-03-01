@@ -77,6 +77,8 @@ fw [directory] [options]
 | `-H, --hidden`      | Include hidden files                   |
 | `-I, --no-ignore`   | Ignore .gitignore rules                |
 | `-O, --output FILE` | Save to specific output file           |
+| `--relative`        | Use relative file paths (default)      |
+| `--global`          | Use absolute file paths                |
 | `-v, --verbose`     | Show verbose output (file count, size) |
 | `-V, --version`     | Show version and exit                  |
 
@@ -97,6 +99,12 @@ fw -I
 
 # Save to a specific file
 fw -O context.txt
+
+# Explicitly use relative paths in output markers (default)
+fw --relative
+
+# Use absolute paths in output markers
+fw --global
 
 # Use with piped input
 find . -name "*.py" | fw

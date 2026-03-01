@@ -13,6 +13,7 @@ Single-file Python 3 CLI tool. Interactively selects files via `fzf`/`sk` and co
 - Standard library only — no third-party dependencies.
 - External tools: `fzf` or `sk` (required), `bat` (optional preview).
 - CLI parsing via `argparse`; type hints from `typing`.
+- Output marker paths support `--relative` (default) and `--global` modes.
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, etc.).
 - Linting and formatting with `ruff`.
 
@@ -24,4 +25,6 @@ No automated test suite. Verify changes manually:
 ./fw --help
 ./fw --version
 ./fw              # interactive selection via fzf/sk
+./fw --relative   # marker paths are relative to target directory (default)
+./fw --global     # marker paths are absolute paths
 ```

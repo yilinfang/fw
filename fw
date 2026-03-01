@@ -219,7 +219,10 @@ def format_size(size_bytes: int) -> str:
 
 
 def combine_files(
-    selected_files: List[str], output_file: str, base_directory: str
+    selected_files: List[str],
+    output_file: str,
+    base_directory: str,
+    path_mode: str,
 ) -> int:
     """Combine selected files into the output file with metadata markers.
 
@@ -227,6 +230,7 @@ def combine_files(
         selected_files: List of file paths to combine.
         output_file: Path to the output file.
         base_directory: Base directory for computing relative paths.
+        path_mode: Path mode for markers ("relative" or "global").
 
     Returns:
         Total bytes written to the output file.
@@ -238,20 +242,23 @@ def combine_files(
                 if not os.path.isfile(file_path):
                     continue
 
-                try:
-                    rel_path = os.path.relpath(file_path, base_directory)
-                except ValueError:
-                    rel_path = file_path
+                if path_mode == "global":
+                    display_path = os.path.abspath(file_path)
+                else:
+                    try:
+                        display_path = os.path.relpath(file_path, base_directory)
+                    except ValueError:
+                        display_path = file_path
 
-                f.write(f"<<< START OF FILE: {rel_path} >>>\n")
+                f.write(f"<<< START OF FILE: {display_path} >>>\n")
                 try:
                     with open(
                         file_path, "r", encoding="utf-8", errors="replace"
                     ) as infile:
                         shutil.copyfileobj(infile, f, length=1024 * 1024)
                 except Exception as e:
-                    f.write(f"Error reading file {rel_path}: {e}\n")
-                f.write(f"\n<<< END OF FILE: {rel_path} >>>\n\n")
+                    f.write(f"Error reading file {display_path}: {e}\n")
+                f.write(f"\n<<< END OF FILE: {display_path} >>>\n\n")
         total_bytes = os.path.getsize(output_file)
     except Exception as e:
         print(f"Error writing to {output_file}: {e}", file=sys.stderr)
@@ -330,6 +337,8 @@ Examples:
   fw -H                   Include hidden files
   fw -I                   Ignore .gitignore rules
   fw -O out.txt           Save to specific output file
+  fw --relative           Use relative paths in output markers (default)
+  fw --global             Use absolute paths in output markers
   find . -name "*.py" | fw   Use piped input
         """,
     )
@@ -341,6 +350,22 @@ Examples:
         "-I", "--no-ignore", action="store_true", help="Ignore VCS ignore rules."
     )
     parser.add_argument("-O", "--output", type=str, help="Output file path.")
+    path_mode_group = parser.add_mutually_exclusive_group()
+    path_mode_group.add_argument(
+        "--relative",
+        action="store_const",
+        dest="path_mode",
+        const="relative",
+        help="Use relative file paths in output markers (default).",
+    )
+    path_mode_group.add_argument(
+        "--global",
+        action="store_const",
+        dest="path_mode",
+        const="global",
+        help="Use absolute file paths in output markers.",
+    )
+    parser.set_defaults(path_mode="relative")
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Show verbose output."
     )
@@ -398,7 +423,9 @@ Examples:
         fd, output_path = tempfile.mkstemp(prefix="fw_", suffix=".txt")
         os.close(fd)
 
-    total_bytes = combine_files(selected_files, output_path, directory)
+    total_bytes = combine_files(
+        selected_files, output_path, directory, args.path_mode
+    )
 
     if args.verbose:
         print(
