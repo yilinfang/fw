@@ -201,29 +201,12 @@ def run_fzf_with_command(
         sys.exit(1)
 
 
-def format_size(size_bytes: int) -> str:
-    """Format a byte size into a human-readable string.
-
-    Args:
-        size_bytes: Size in bytes.
-
-    Returns:
-        Human-readable size string (e.g., "1.5 KB", "2.3 MB").
-    """
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 * 1024:
-        return f"{size_bytes / 1024:.1f} KB"
-    else:
-        return f"{size_bytes / (1024 * 1024):.1f} MB"
-
-
 def combine_files(
     selected_files: List[str],
     output_file: str,
     base_directory: str,
     path_mode: str,
-) -> int:
+) -> None:
     """Combine selected files into the output file with metadata markers.
 
     Args:
@@ -232,10 +215,7 @@ def combine_files(
         base_directory: Base directory for computing relative paths.
         path_mode: Path mode for markers ("relative" or "global").
 
-    Returns:
-        Total bytes written to the output file.
     """
-    total_bytes = 0
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             for file_path in selected_files:
@@ -259,11 +239,9 @@ def combine_files(
                 except Exception as e:
                     f.write(f"Error reading file {display_path}: {e}\n")
                 f.write(f"\n<<< END OF FILE: {display_path} >>>\n\n")
-        total_bytes = os.path.getsize(output_file)
     except Exception as e:
         print(f"Error writing to {output_file}: {e}", file=sys.stderr)
         sys.exit(1)
-    return total_bytes
 
 
 def get_latest_version() -> Optional[str]:
@@ -423,15 +401,10 @@ Examples:
         fd, output_path = tempfile.mkstemp(prefix="fw_", suffix=".txt")
         os.close(fd)
 
-    total_bytes = combine_files(
-        selected_files, output_path, directory, args.path_mode
-    )
+    combine_files(selected_files, output_path, directory, args.path_mode)
 
     if args.verbose:
-        print(
-            f"Combined {len(selected_files)} file(s) ({format_size(total_bytes)}) "
-            f"into {output_path}"
-        )
+        print(f"Combined {len(selected_files)} file(s) into {output_path}")
 
     editor = os.getenv("VISUAL") or os.getenv("EDITOR") or "vi"
     editor_success = False
