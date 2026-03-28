@@ -6,9 +6,33 @@
 
 set -euo pipefail
 
+# --- Configuration ---
+REPO="yilinfang/fw"
+BINARY_NAME="fw"
+DEFAULT_INSTALL_DIR="$HOME/.local/bin"
+GITHUB_API="https://api.github.com/repos/$REPO/releases/latest"
+
+resolve_install_dir() {
+	if [ -n "${FW_INSTALL_DIR:-}" ]; then
+		echo "$FW_INSTALL_DIR"
+		return
+	fi
+
+	local existing_fw
+	existing_fw="$(command -v "$BINARY_NAME" 2>/dev/null || true)"
+	case "$existing_fw" in
+	/*)
+		dirname "$existing_fw"
+		return
+		;;
+	esac
+
+	echo "$DEFAULT_INSTALL_DIR"
+}
+
 # --- Uninstall Mode ---
 if [ "${1:-}" = "--uninstall" ]; then
-	INSTALL_DIR="${FW_INSTALL_DIR:-$HOME/.local/bin}"
+	INSTALL_DIR="$(resolve_install_dir)"
 	TARGET="$INSTALL_DIR/fw"
 	if [ -f "$TARGET" ]; then
 		rm "$TARGET"
@@ -18,12 +42,6 @@ if [ "${1:-}" = "--uninstall" ]; then
 	fi
 	exit 0
 fi
-
-# --- Configuration ---
-REPO="yilinfang/fw"
-BINARY_NAME="fw"
-DEFAULT_INSTALL_DIR="$HOME/.local/bin"
-GITHUB_API="https://api.github.com/repos/$REPO/releases/latest"
 
 # --- Colors ---
 RED='\033[0;31m'
@@ -54,7 +72,7 @@ if ! command -v fzf >/dev/null 2>&1 && ! command -v sk >/dev/null 2>&1; then
 fi
 
 # --- Installation Directory ---
-INSTALL_DIR="${FW_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
+INSTALL_DIR="$(resolve_install_dir)"
 TARGET="$INSTALL_DIR/$BINARY_NAME"
 mkdir -p "$INSTALL_DIR"
 

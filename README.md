@@ -44,6 +44,8 @@ You can install `fw` to `~/.local/bin` by running following command:
 curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | bash
 ```
 
+To upgrade an existing install, run the same command again.
+
 To install to a different location, set the `FW_INSTALL_DIR` variable:
 
 ```bash
@@ -81,6 +83,8 @@ fw [directory] [options]
 | `--global`          | Use absolute file paths                |
 | `-v, --verbose`     | Show verbose output (file count, size) |
 | `-V, --version`     | Show version and exit                  |
+
+Note: `--self-update` is deprecated. Use `install.sh` to upgrade.
 
 ### Examples
 

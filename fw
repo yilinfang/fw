@@ -17,19 +17,22 @@ import tempfile
 from shutil import which
 from typing import List, Optional
 
-__version__ = "1.5.1"
+__version__ = "1.5.2"
 
 
-def check_tool(tool_name: str) -> bool:
-    """Check if a tool is installed by checking its path.
+def pick_first_tool(candidates: List[str]) -> Optional[str]:
+    """Return the first executable tool found in PATH.
 
     Args:
-        tool_name: Name of the command-line tool to check.
+        candidates: Candidate command names in preferred order.
 
     Returns:
-        True if the tool is found in PATH, False otherwise.
+        First available command name, or None if none are available.
     """
-    return which(tool_name) is not None
+    for tool in candidates:
+        if which(tool):
+            return tool
+    return None
 
 
 def get_file_lister() -> Optional[str]:
@@ -38,10 +41,7 @@ def get_file_lister() -> Optional[str]:
     Returns:
         Name of the available tool (fd, fdfind, rg, or find), or None if none found.
     """
-    for tool in ["fd", "fdfind", "rg", "find"]:
-        if check_tool(tool):
-            return tool
-    return None
+    return pick_first_tool(["fd", "fdfind", "rg", "find"])
 
 
 def get_previewer() -> Optional[str]:
@@ -50,10 +50,7 @@ def get_previewer() -> Optional[str]:
     Returns:
         Name of the available tool (bat or cat), or None if none found.
     """
-    for tool in ["bat", "cat"]:
-        if check_tool(tool):
-            return tool
-    return None
+    return pick_first_tool(["bat", "cat"])
 
 
 def get_fuzzy_finder() -> Optional[str]:
@@ -62,10 +59,7 @@ def get_fuzzy_finder() -> Optional[str]:
     Returns:
         Name of the available tool (fzf or sk), or None if none found.
     """
-    for tool in ["fzf", "sk"]:
-        if check_tool(tool):
-            return tool
-    return None
+    return pick_first_tool(["fzf", "sk"])
 
 
 def build_file_list_command(
@@ -244,63 +238,15 @@ def combine_files(
         sys.exit(1)
 
 
-def get_latest_version() -> Optional[str]:
-    """Fetch the latest release tag from GitHub.
-
-    Returns:
-        The latest version string (e.g. "1.3.0"), or None on failure.
-    """
-    import json
-    from urllib.request import urlopen
-
-    api_url = "https://api.github.com/repos/yilinfang/fw/releases/latest"
-    try:
-        with urlopen(api_url, timeout=5.0) as resp:
-            data = json.loads(resp.read().decode())
-            return data.get("tag_name", "").lstrip("v") or None
-    except Exception:
-        return None
-
-
-def self_update() -> None:
-    """Update fw to the latest release, skipping if already up to date."""
-    latest = get_latest_version()
-    if latest is None:
-        print("Error: Could not fetch latest version from GitHub.", file=sys.stderr)
-        sys.exit(1)
-
-    if latest == __version__:
-        print("fw is already up to date ({}).".format(__version__))
-        return
-
-    print("Updating fw from {} to {}...".format(__version__, latest))
-
-    script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    install_url = "https://raw.githubusercontent.com/yilinfang/fw/main/install.sh"
-    env = dict(os.environ, FW_INSTALL_DIR=script_dir)
-
-    if which("curl"):
-        fetch_cmd = "curl -fsSL {}".format(install_url)
-    elif which("wget"):
-        fetch_cmd = "wget -qO- {}".format(install_url)
-    else:
-        print("Error: Neither curl nor wget found.", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        subprocess.run(
-            "{} | bash".format(fetch_cmd),
-            shell=True,
-            check=True,
-            env=env,
-        )
-    except subprocess.CalledProcessError as e:
-        print("Error during update: {}".format(e), file=sys.stderr)
-        print(
-            "If fw is installed system-wide, you may need to run: sudo fw --self-update",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+def print_self_update_deprecation() -> None:
+    """Print migration guidance for deprecated --self-update and exit with error."""
+    print(
+        "Error: --self-update has been removed from fw.\n"
+        "To install or upgrade fw, run:\n"
+        "  curl -fsSL https://raw.githubusercontent.com/yilinfang/fw/main/install.sh | bash",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 def main() -> None:
@@ -351,13 +297,14 @@ Examples:
         "-V", "--version", action="version", version=f"fw {__version__}"
     )
     parser.add_argument(
-        "--self-update", action="store_true", help="Update fw to the latest version."
+        "--self-update",
+        action="store_true",
+        help="Deprecated. Use install.sh to install or upgrade fw.",
     )
     args = parser.parse_args()
 
     if args.self_update:
-        self_update()
-        return
+        print_self_update_deprecation()
 
     fzf_tool = get_fuzzy_finder()
     if not fzf_tool:
